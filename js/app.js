@@ -15,7 +15,7 @@
     //define product model
     var Contact = Backbone.Model.extend({
         defaults: {
-            photo: "/img/placeholder.png"
+            photo: "file://localhost/Users/appacademy/Desktop/backbone/contacts_manager_backbone/placeholder.png"
         }
     });
 
@@ -115,6 +115,7 @@
         }
     });
 
+    //add routing
     var ContactsRouter = Backbone.Router.extend({
         routes: {
             "filter/:type": "urlFilter"
@@ -126,10 +127,13 @@
         }
     });
 
+    //create instance of master view
     var directory = new DirectoryView();
 
+    //create router instance
     var contactsRouter = new ContactsRouter();
 
+    //start history service
     Backbone.history.start();
 
 } (jQuery));

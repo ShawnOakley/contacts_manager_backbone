@@ -7,10 +7,11 @@
     <link rel='stylesheet' href='css/screen.css'/>
   </head>
   <body>
+    <div id="contacts">
     <header>
       <div id="filter"><label>Show me:</label></div>
     </header>
-    <div id="contacts"></div>
+    </div>
     <!-- NOTE use of 'text/template' custome type tag.  This prevents the browser from executing the script when placed in the html doc -->
     <script id="contactTemplate" type="text/template">
       <img src="<%= photo %>" alt="<%= name %>" />
