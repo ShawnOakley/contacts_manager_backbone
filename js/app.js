@@ -15,7 +15,12 @@
     //define product model
     var Contact = Backbone.Model.extend({
         defaults: {
-            photo: "file://localhost/Users/appacademy/Desktop/backbone/contacts_manager_backbone/placeholder.png"
+            photo: "file://localhost/Users/appacademy/Desktop/backbone/contacts_manager_backbone/placeholder.png",
+            name:"",
+            address:"",
+            tel:"",
+            email:"",
+            type:""
         }
     });
 
@@ -33,6 +38,23 @@
         render: function () {
             this.$el.html(this.template(this.model.toJSON()));
             return this;
+        },
+
+        //add ui events for Contactview
+        events: {
+            "click button.delete": "deleteContact"
+        },
+
+        // delete contact
+        deleteContact: function() {
+          var removedType = this.model.get("type").toLowerCase();
+
+          this.model.destroy();
+          this.remove();
+
+          if (_.indexOf(directory.getTypes(), removedType) === -1) {
+            directory.$el.find("#filter select").children("[value='" + removedType + "']").remove();
+          }
         }
     });
 
@@ -48,6 +70,8 @@
 
             this.on("change:filterType", this.filterByType, this);
             this.collection.on("reset", this.render, this);
+            this.collection.on("add", this.renderContact, this);
+            this.collection.on("remove", this.removeContact, this);
         },
 
         render: function () {
@@ -86,7 +110,9 @@
 
         //add ui events
         events: {
-            "change #filter select": "setFilter"
+            "change #filter select": "setFilter",
+            "click #add": "addContact",
+            "click #showForm": "showForm"
         },
 
         //Set filter property and fire change event
@@ -112,7 +138,46 @@
 
                 contactsRouter.navigate("filter/" + filterType);
             }
+        },
+        // add contact
+        addContact: function(e){
+          e.preventDefault();
+
+          var newModel = {};
+          $('#addContact').children("input").each(function (i, el) {
+            if ($(el).val() !== "") {
+              newModel[el.id] = $(el).val();
+            }
+          });
+
+          contacts.push(newModel);
+
+          if(_.indexOf(this.getTypes(), newModel.type) === -1) {
+            this.collection.add(new Contact(newModel));
+            this.$el.find("#filter").find("select").remove().end().append(this.createSelect());
+          } else {
+            this.collection.add(new Contact(newModel));
+          }
+        },
+
+        removeContact: function (removedModel) {
+          var removed = removedModel.attributes;
+
+          if (removed.photo === "file://localhost/Users/appacademy/Desktop/backbone/contacts_manager_backbone/placeholder.png") {
+            delete removed.photo;
+          }
+
+          _.each (contacts, function(contact){
+            if (_.isEqual(contact, removed)){
+              contacts.splice(_.indexOf(contacts, contact), 1);
+            }
+          });
+        },
+
+        showForm: function (){
+          this.$el.find("#addContact").slideToggle();
         }
+
     });
 
     //add routing
