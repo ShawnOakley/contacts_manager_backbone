@@ -1,5 +1,7 @@
 (function ($) {
 
+
+
     //demo data
     var contacts = [
         { name: "Contact 1", address: "1, a street, a town, a city, AB12 3CD", tel: "0123456789", email: "anemail@me.com", type: "family" },
@@ -15,7 +17,7 @@
     //define product model
     var Contact = Backbone.Model.extend({
         defaults: {
-            photo: "/img/placeholder.png",
+            photo: "",
             name: "",
             address: "",
             tel: "",
@@ -26,7 +28,19 @@
 
     //define directory collection
     var Directory = Backbone.Collection.extend({
-        model: Contact
+        model: Contact,
+        selectedField: 'name',
+        comparator: function (contact) {
+          var that = this;
+          return contact.get(that.selectedField);
+        },
+        changeSort: function(property){
+          var that = this;
+          that.comparator = function(contact) {
+            var that = this;
+            that.comparator = function(){ that.contact.get(that.property) };
+          };
+        }
     });
 
     //define individual contact view
@@ -35,7 +49,6 @@
         className: "contact-container",
         template: _.template($("#contactTemplate").html()),
         editTemplate: _.template($("#contactEditTemplate").html()),
-
         render: function () {
             this.$el.html(this.template(this.model.toJSON()));
             return this;
@@ -114,7 +127,7 @@
             this.render();
 
             //if model acquired default photo property, remove it
-            if (prev.photo === "/img/placeholder.png") {
+            if (prev.photo === "") {
                 delete prev.photo;
             }
 
@@ -140,8 +153,10 @@
 
             this.render();
             this.$el.find("#filter").append(this.createSelect());
+            this.$el.find("#sort").append(this.createSort());
 
             this.on("change:filterType", this.filterByType, this);
+            this.on("change:sortType", this.sortByField, this);
             this.collection.on("reset", this.render, this);
             this.collection.on("add", this.renderContact, this);
             this.collection.on("remove", this.removeContact, this);
@@ -168,6 +183,13 @@
             });
         },
 
+        getFields: function () {
+            return _.uniq(this.collection.pluck(), false, function (type) {
+                return type.toLowerCase();
+            });
+        },
+
+        // Creates select field
         createSelect: function () {
             var filter = this.$el.find("#filter"),
                 select = $("<select/>", {
@@ -184,9 +206,31 @@
             return select;
         },
 
+        // Creates sort select
+        createSort: function () {
+          var model = new Contact();
+          var attrs = Object.keys(model.toJSON());
+          var filter = this.$el.find("#sort"),
+                select = $("<select/>", {
+                    html: "<option value='name'>name</option>"
+                });
+
+            _.each(attrs, function (attr) {
+              if (attr !== 'name' && attr !== 'photo') {
+                var option = $("<option/>", {
+                    value: attr.toLowerCase(),
+                    text: attr.toLowerCase()
+                }).appendTo(select);
+              };
+            });
+
+            return select;
+        },
+
         //add ui events
         events: {
             "change #filter select": "setFilter",
+            "change #sort select": "setSort",
             "click #add": "addContact",
             "click #showForm": "showForm"
         },
@@ -195,6 +239,11 @@
         setFilter: function (e) {
             this.filterType = e.currentTarget.value;
             this.trigger("change:filterType");
+        },
+
+        setSort: function (e) {
+          this.sortType = e.currentTarget.value;
+          this.trigger("change:sortType")
         },
 
         //filter the view
@@ -214,6 +263,13 @@
 
                 contactsRouter.navigate("filter/" + filterType);
             }
+        },
+
+        //sorts by contact type
+        sortByField: function () {
+          var sortType = this.sortType;
+          this.collection.selectedField = sortType;
+          this.collection.sort();
         },
 
         //add a new contact
@@ -243,7 +299,7 @@
             var removed = removedModel.attributes;
 
             //if model acquired default photo property, remove it
-            if (removed.photo === "/img/placeholder.png") {
+            if (removed.photo === "") {
                 delete removed.photo;
             }
 
@@ -274,11 +330,14 @@
 
     //create instance of master view
     var directory = new DirectoryView();
+    directory.comparator = 'name';
 
     //create router instance
     var contactsRouter = new ContactsRouter();
 
     //start history service
     Backbone.history.start();
+
+    $('a#showForm').click();
 
 } (jQuery));
